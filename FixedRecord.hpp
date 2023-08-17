@@ -22,7 +22,10 @@ struct Alumno {
   char carrera[MAX_CARRERA_LEN];
     int ciclo;
   float mensualidad;
-  // NOLINTEND
+  void showData() const {
+    std::cout << codigo << " - " << nombre << " - " << apellidos << " - "
+              << carrera << " - " << ciclo << " - " << mensualidad << std::endl;
+  } // NOLINTEND
 };
 
 class FixedRecord {
@@ -65,9 +68,25 @@ inline FixedRecord::FixedRecord(const std::string_view &file_name)
 
 inline void FixedRecord::add(const Alumno &record) {
   m_file_stream.open(m_file_name.data(), std::ios::app | std::ios::binary);
-  // TODO: write record to file
-  m_file_stream << std::endl;
+  m_file_stream.write((char *)&record, RECORD_SIZE);
   m_file_stream.close();
+}
+
+inline std::vector<Alumno> FixedRecord::load() {
+  std::vector<Alumno> alumnos;
+  Alumno alumno;
+  std::ifstream file(m_file_name, std::ios::binary);
+  if (!file.is_open())
+    throw("No se pudo abrir el archivo");
+
+  while (file.peek() != EOF) {
+    alumno = Alumno();
+    file.read((char *)&alumno, sizeof(Alumno));
+    alumnos.push_back(alumno);
+  }
+  file.close();
+
+  return alumnos;
 }
 
 inline bool FixedRecord::remove(pos_type pos) {
@@ -87,6 +106,7 @@ inline bool FixedRecord::remove(pos_type pos) {
   m_file_stream.write(reinterpret_cast<const char *>(&pos), sizeof(int));
 
   if (m_deleted == -1) {
+    std::cout << "deleted-1\n";
     m_deleted = pos;
   } else {
     m_file_stream.seekp(static_cast<int>(m_deleted * RECORD_SIZE));

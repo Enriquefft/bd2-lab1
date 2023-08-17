@@ -18,12 +18,14 @@ int main() {
   students.add(Alumno{"1", "jhon", "doe", "carr", 3, 3.5});
   students.add(Alumno{"2", "jane", "doe", "carr", 3, 3.5});
 
+  auto removed = students.remove(1);
+
+  std::cout << "Removed: " << removed << '\n';
+
   auto students_vec = students.load();
 
   for (const auto &student : students_vec) {
-    std::cout << student.codigo << " " << student.nombre << " "
-              << student.apellidos << " " << student.carrera << " "
-              << student.ciclo << " " << student.mensualidad << std::endl;
+    student.showData();
   }
 
   return 0;
