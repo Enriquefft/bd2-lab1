@@ -14,6 +14,8 @@ constexpr std::size_t MAX_NOMBRE_LEN = 11;
 constexpr std::size_t MAX_APELLIDO_LEN = 20;
 constexpr std::size_t MAX_CARRERA_LEN = 15;
 
+constexpr std::string_view METADATA_FILE = "metadata.txt";
+
 struct Alumno {
   // NOLINTBEGIN
   char codigo[MAX_CODIGO_LEN];
@@ -52,6 +54,8 @@ private:
   std::fstream m_file_stream;
   std::string m_file_name;
   pos_type m_first_deleted = -1;
+
+  void updateMetadata(pos_type pos);
 };
 constexpr Alumno GetEmptyAlumno(int pos = -1) {
   return Alumno{"", "", "", "", 0, 0, pos};
@@ -69,7 +73,15 @@ inline FixedRecord::FixedRecord(const std::string_view &file_name)
     m_file_stream.open(file_name.data(), std::ios::out);
   }
 
+  updateMetadata(-1);
+
   m_file_stream.close();
+}
+
+void FixedRecord::updateMetadata(pos_type pos) {
+  std::ofstream metadata(METADATA_FILE.data());
+  metadata << pos << std::endl;
+  metadata.close();
 }
 
 inline void FixedRecord::add(const Alumno &record) {
@@ -119,6 +131,7 @@ inline bool FixedRecord::remove(pos_type pos) {
   if (m_first_deleted == -1) {
     std::cout << "deleted-1\n";
     m_first_deleted = pos;
+    updateMetadata(m_first_deleted);
   } else {
     m_file_stream.seekp(static_cast<int>(m_first_deleted * RECORD_SIZE));
     auto previous_deleted = GetEmptyAlumno(pos);
