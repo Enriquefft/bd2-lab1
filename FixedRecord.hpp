@@ -1,3 +1,6 @@
+#ifndef FIXEDRECORD_HPP
+#define FIXEDRECORD_HPP
+
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
@@ -5,8 +8,6 @@
 #include <vector>
 
 using std::vector;
-
-constexpr std::string_view FILE_NAME = "students.dat";
 
 constexpr std::size_t MAX_CODIGO_LEN = 5;
 constexpr std::size_t MAX_NOMBRE_LEN = 11;
@@ -29,9 +30,7 @@ public:
   // Enables storing of EOF
   using pos_type = int;
 
-  static constexpr pos_type RECORD_SIZE = MAX_CODIGO_LEN + MAX_NOMBRE_LEN +
-                                          MAX_APELLIDO_LEN + MAX_CARRERA_LEN +
-                                          sizeof(int) + sizeof(float) + 1;
+  static constexpr pos_type RECORD_SIZE = sizeof(Alumno);
 
   explicit FixedRecord(const std::string_view &file_name);
   vector<Alumno> load();
@@ -41,22 +40,15 @@ public:
 
   [[nodiscard]] bool remove(pos_type pos);
 
-  void operator<<(const Alumno &record) {
-    m_file_stream.open(m_file_name.data(), std::ios::app | std::ios::binary);
-    // TODO: write record to file
-    m_file_stream << std::endl;
-    m_file_stream.close();
-  }
-
   ~FixedRecord() { m_file_stream.close(); }
 
 private:
   std::fstream m_file_stream;
   std::string m_file_name;
-  pos_type deleted = -1;
+  pos_type m_deleted = -1;
 };
 
-FixedRecord::FixedRecord(const std::string_view &file_name)
+inline FixedRecord::FixedRecord(const std::string_view &file_name)
     : m_file_name(file_name) {
   m_file_stream.open(file_name.data(), std::ios::in | std::ios::out);
 
@@ -71,35 +63,38 @@ FixedRecord::FixedRecord(const std::string_view &file_name)
   m_file_stream.close();
 }
 
-bool FixedRecord::remove(pos_type pos) {
+inline void FixedRecord::add(const Alumno &record) {
+  m_file_stream.open(m_file_name.data(), std::ios::app | std::ios::binary);
+  // TODO: write record to file
+  m_file_stream << std::endl;
+  m_file_stream.close();
+}
+
+inline bool FixedRecord::remove(pos_type pos) {
+
+  // TODO: check if pos is valid
+
   m_file_stream.open(m_file_name.data(),
                      std::ios::in | std::ios::out | std::ios::binary);
 
-  m_file_stream.seekg(0);
-
-  // Search for name
-  std::string line;
-  int line_number = 0;
-
-  //
-  while (std::getline(m_file_stream, line)) {
-    std::cout << "Reading line \n";
-    if (compareKey(line, name)) {
-      if (deleted == -1) {
-        deleted = line_number;
-      } else {
-        // TODO: This might not work, test it
-        m_file_stream.seekp(static_cast<int>(deleted * RECORD_SIZE));
-        m_file_stream << line;
-        deleted = line_number;
-      }
-
-      m_file_stream.close();
-      return true;
-    }
-    line_number++;
+  m_file_stream.seekg(0, std::ios::end); // ubicar cursor al final del archivo
+  long total_bytes = m_file_stream.tellg(); // cantidad de bytes del archivo
+  if (total_bytes < (static_cast<long>(pos) * RECORD_SIZE)) {
+    return false;
   }
-  line_number = -1;
+
+  m_file_stream.seekp(static_cast<int>(pos * RECORD_SIZE));
+  m_file_stream.write(reinterpret_cast<const char *>(&pos), sizeof(int));
+
+  if (m_deleted == -1) {
+    m_deleted = pos;
+  } else {
+    m_file_stream.seekp(static_cast<int>(m_deleted * RECORD_SIZE));
+    m_file_stream.write(reinterpret_cast<const char *>(&pos), sizeof(int));
+  }
   m_file_stream.close();
-  return false;
+
+  return true;
 }
+
+#endif // FIXEDRECORD_HPP

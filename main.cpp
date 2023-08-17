@@ -1,12 +1,29 @@
 #include "FixedRecord.hpp"
+
+// struct Alumno {
+//   char codigo[MAX_CODIGO_LEN];
+//   char nombre[MAX_NOMBRE_LEN];
+//   char apellidos[MAX_APELLIDO_LEN];
+//   char carrera[MAX_CARRERA_LEN];
+//   int ciclo;
+//   float mensualidad;
+// };
+
 int main() {
 
-  FixedRecord students{FILE_NAME};
-  students << Alumno{{"John"}, {"Doe"}};
-  students << Alumno{{"Jane"}, {"Doe"}};
+  constexpr std::string_view FILE_NAME = "students.dat";
 
-  if (students.removeEntry("John")) {
-    std::cout << "Entry removed" << std::endl;
+  FixedRecord students{FILE_NAME};
+
+  students.add(Alumno{"1", "jhon", "doe", "carr", 3, 3.5});
+  students.add(Alumno{"2", "jane", "doe", "carr", 3, 3.5});
+
+  auto students_vec = students.load();
+
+  for (const auto &student : students_vec) {
+    std::cout << student.codigo << " " << student.nombre << " "
+              << student.apellidos << " " << student.carrera << " "
+              << student.ciclo << " " << student.mensualidad << std::endl;
   }
 
   return 0;
