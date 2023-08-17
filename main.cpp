@@ -15,12 +15,14 @@ int main() {
 
   FixedRecord students{FILE_NAME};
 
-  students.add(Alumno{"1", "jhon", "doe", "carr", 3, 3.5});
-  students.add(Alumno{"2", "jane", "doe", "carr", 3, 3.5});
+  students.add(Alumno{"1", "jhon", "doe1", "carr1", 3, 3.5});
+  students.add(Alumno{"2", "jane", "doe2", "carr2", 4, 4.5});
 
   auto removed = students.remove(1);
+  auto removed2 = students.remove(0);
 
-  std::cout << "Removed: " << removed << '\n';
+  std::cout << "Removed jhane: " << removed << '\n';
+  std::cout << "Removed jhon: " << removed2 << '\n';
 
   auto students_vec = students.load();
 

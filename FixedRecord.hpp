@@ -18,10 +18,13 @@ struct Alumno {
   // NOLINTBEGIN
   char codigo[MAX_CODIGO_LEN];
   char nombre[MAX_NOMBRE_LEN];
-    char apellidos[MAX_APELLIDO_LEN];
+  char apellidos[MAX_APELLIDO_LEN];
   char carrera[MAX_CARRERA_LEN];
-    int ciclo;
+  int ciclo;
   float mensualidad;
+
+  int next_deleted = -1;
+
   void showData() const {
     std::cout << codigo << " - " << nombre << " - " << apellidos << " - "
               << carrera << " - " << ciclo << " - " << mensualidad << std::endl;
@@ -48,8 +51,11 @@ public:
 private:
   std::fstream m_file_stream;
   std::string m_file_name;
-  pos_type m_deleted = -1;
+  pos_type m_first_deleted = -1;
 };
+constexpr Alumno GetEmptyAlumno(int pos = -1) {
+  return Alumno{"", "", "", "", 0, 0, pos};
+}
 
 inline FixedRecord::FixedRecord(const std::string_view &file_name)
     : m_file_name(file_name) {
@@ -82,7 +88,10 @@ inline std::vector<Alumno> FixedRecord::load() {
   while (file.peek() != EOF) {
     alumno = Alumno();
     file.read((char *)&alumno, sizeof(Alumno));
-    alumnos.push_back(alumno);
+
+    if (alumno.next_deleted == -1) {
+      alumnos.push_back(alumno);
+    }
   }
   file.close();
 
@@ -103,14 +112,17 @@ inline bool FixedRecord::remove(pos_type pos) {
   }
 
   m_file_stream.seekp(static_cast<int>(pos * RECORD_SIZE));
-  m_file_stream.write(reinterpret_cast<const char *>(&pos), sizeof(int));
 
-  if (m_deleted == -1) {
+  auto deleted = GetEmptyAlumno(pos);
+  m_file_stream.write((char *)&deleted, RECORD_SIZE);
+
+  if (m_first_deleted == -1) {
     std::cout << "deleted-1\n";
-    m_deleted = pos;
+    m_first_deleted = pos;
   } else {
-    m_file_stream.seekp(static_cast<int>(m_deleted * RECORD_SIZE));
-    m_file_stream.write(reinterpret_cast<const char *>(&pos), sizeof(int));
+    m_file_stream.seekp(static_cast<int>(m_first_deleted * RECORD_SIZE));
+    auto previous_deleted = GetEmptyAlumno(pos);
+    m_file_stream.write((char *)&previous_deleted, RECORD_SIZE);
   }
   m_file_stream.close();
 
