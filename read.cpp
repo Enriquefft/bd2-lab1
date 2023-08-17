@@ -1,5 +1,6 @@
 #include <array>
 #include <cstddef>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 
@@ -19,21 +20,31 @@ public:
 
   static constexpr pos_type RECORD_SIZE = MAX_NAME_LEN + MAX_SURNAME_LEN + 1;
 
-  explicit StudentFile(const std::string_view &file_name) {
+  explicit StudentFile(const std::string_view &file_name)
+      : m_file_name(file_name) {
+    m_file_stream.open(file_name.data(), std::ios::in | std::ios::out);
 
     // If file doesn't exists create it
-    // TODO(enrique):
+    if (std::filesystem::exists(file_name.data()) &&
+        std::filesystem::is_regular_file(file_name.data())) {
+    } else {
+      m_file_stream.close();
+      m_file_stream.open(file_name.data(), std::ios::out);
+    }
 
-    m_file_stream.open(file_name.data(), std::ios::in | std::ios::out);
+    m_file_stream.close();
   }
-  explicit StudentFile(const char *file_name) : m_file_stream(file_name) {}
 
   void operator<<(const Student &record) {
+    m_file_stream.open(m_file_name.data(), std::ios::app | std::ios::binary);
     m_file_stream.write(record.m_name.data(), MAX_NAME_LEN);
     m_file_stream.write(record.m_surname.data(), MAX_SURNAME_LEN);
     m_file_stream << std::endl;
+    m_file_stream.close();
   }
   [[nodiscard]] bool removeEntry(const std::string_view &name) {
+    m_file_stream.open(m_file_name.data(),
+                       std::ios::in | std::ios::out | std::ios::binary);
 
     m_file_stream.seekg(0);
 
@@ -47,16 +58,19 @@ public:
         if (deleted == -1) {
           deleted = line_number;
         } else {
+          // TODO: This might not work, test it
           m_file_stream.seekp(static_cast<int>(deleted * RECORD_SIZE));
           m_file_stream << line;
           deleted = line_number;
         }
 
+        m_file_stream.close();
         return true;
       }
       line_number++;
     }
     line_number = -1;
+    m_file_stream.close();
     return false;
   }
 
@@ -64,6 +78,7 @@ public:
 
 private:
   std::fstream m_file_stream;
+  std::string m_file_name;
   pos_type deleted = -1;
 
   static bool compareKey(const std::string_view &line,
@@ -83,9 +98,9 @@ int main() {
   students << Student{{"John"}, {"Doe"}};
   students << Student{{"Jane"}, {"Doe"}};
 
-  // if (students.removeEntry("John")) {
-  //   std::cout << "Entry removed" << std::endl;
-  // }
+  if (students.removeEntry("John")) {
+    std::cout << "Entry removed" << std::endl;
+  }
 
   return 0;
 }
