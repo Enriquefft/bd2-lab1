@@ -1,4 +1,5 @@
 #include "FixedRecord.hpp"
+#include <random>
 
 // struct Alumno {
 //   char codigo[MAX_CODIGO_LEN];

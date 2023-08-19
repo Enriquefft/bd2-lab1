@@ -7,44 +7,24 @@
 #include <iostream>
 #include <vector>
 
+#include "Student.hpp"
+
 using std::vector;
 
-constexpr std::size_t MAX_CODIGO_LEN = 5;
-constexpr std::size_t MAX_NOMBRE_LEN = 11;
-constexpr std::size_t MAX_APELLIDO_LEN = 20;
-constexpr std::size_t MAX_CARRERA_LEN = 15;
-
 constexpr std::string_view METADATA_FILE = "metadata.txt";
-
-struct Alumno {
-  // NOLINTBEGIN
-  char codigo[MAX_CODIGO_LEN];
-  char nombre[MAX_NOMBRE_LEN];
-  char apellidos[MAX_APELLIDO_LEN];
-  char carrera[MAX_CARRERA_LEN];
-  int ciclo;
-  float mensualidad;
-
-  int next_deleted = -1;
-
-  void showData() const {
-    std::cout << codigo << " - " << nombre << " - " << apellidos << " - "
-              << carrera << " - " << ciclo << " - " << mensualidad << std::endl;
-  } // NOLINTEND
-};
 
 class FixedRecord {
 public:
   // Enables storing of EOF
   using pos_type = int;
 
-  static constexpr pos_type RECORD_SIZE = sizeof(Alumno);
+  static constexpr pos_type RECORD_SIZE = sizeof(Student);
 
   explicit FixedRecord(const std::string_view &file_name);
-  vector<Alumno> load();
-  void add(const Alumno &record);
-  Alumno &readRecord(pos_type pos);
-  Alumno readRecord(pos_type pos) const;
+  vector<Student> load();
+  void add(const Student &record);
+  Student &readRecord(pos_type pos);
+  Student readRecord(pos_type pos) const;
 
   [[nodiscard]] bool remove(pos_type pos);
 
@@ -57,8 +37,8 @@ private:
 
   void updateMetadata(pos_type pos);
 };
-constexpr Alumno GetEmptyAlumno(int pos = -1) {
-  return Alumno{"", "", "", "", 0, 0, pos};
+constexpr Student GetEmptyStudent(int pos = -1) {
+  return Student{"", "", "", "", 0, 0, pos};
 }
 
 inline FixedRecord::FixedRecord(const std::string_view &file_name)
@@ -84,22 +64,25 @@ void FixedRecord::updateMetadata(pos_type pos) {
   metadata.close();
 }
 
-inline void FixedRecord::add(const Alumno &record) {
+inline void FixedRecord::add(const Student &record) {
   m_file_stream.open(m_file_name.data(), std::ios::app | std::ios::binary);
+  if (m_first_deleted != -1) {
+    m_file_stream.seekg(static_cast<int>(m_first_deleted * RECORD_SIZE));
+  }
   m_file_stream.write((char *)&record, RECORD_SIZE);
   m_file_stream.close();
 }
 
-inline std::vector<Alumno> FixedRecord::load() {
-  std::vector<Alumno> alumnos;
-  Alumno alumno;
+inline std::vector<Student> FixedRecord::load() {
+  std::vector<Student> alumnos;
+  Student alumno;
   std::ifstream file(m_file_name, std::ios::binary);
   if (!file.is_open())
     throw("No se pudo abrir el archivo");
 
   while (file.peek() != EOF) {
-    alumno = Alumno();
-    file.read((char *)&alumno, sizeof(Alumno));
+    alumno = Student();
+    file.read((char *)&alumno, sizeof(Student));
 
     if (alumno.next_deleted == -1) {
       alumnos.push_back(alumno);
@@ -125,7 +108,7 @@ inline bool FixedRecord::remove(pos_type pos) {
 
   m_file_stream.seekp(static_cast<int>(pos * RECORD_SIZE));
 
-  auto deleted = GetEmptyAlumno(pos);
+  auto deleted = GetEmptyStudent(pos);
   m_file_stream.write((char *)&deleted, RECORD_SIZE);
 
   if (m_first_deleted == -1) {
@@ -134,7 +117,7 @@ inline bool FixedRecord::remove(pos_type pos) {
     updateMetadata(m_first_deleted);
   } else {
     m_file_stream.seekp(static_cast<int>(m_first_deleted * RECORD_SIZE));
-    auto previous_deleted = GetEmptyAlumno(pos);
+    auto previous_deleted = GetEmptyStudent(pos);
     m_file_stream.write((char *)&previous_deleted, RECORD_SIZE);
   }
   m_file_stream.close();
