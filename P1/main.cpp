@@ -19,7 +19,10 @@ namespace {
 
 auto main() -> int {
 
+  int x = 54;
+
   student_test();
+  std::cout << "Hello World\n";
 
   return 0;
 }

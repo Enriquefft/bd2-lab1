@@ -10,10 +10,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_library(common INTERFACE)
 
-add_executable(p1 P1/main.cpp)
-add_executable(p2 P2/main.cpp)
-add_executable(p3 P3/main.cpp)
-
 target_compile_features(common INTERFACE cxx_std_20)
 
 target_compile_options(
@@ -47,6 +43,8 @@ target_link_options(
   common INTERFACE
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-fsanitize=address,undefined>)
 
+add_subdirectory("P1")
+
 target_link_libraries(p1 PRIVATE common)
-target_link_libraries(p2 PRIVATE common)
-target_link_libraries(p3 PRIVATE common)
+# target_link_libraries(p2 PRIVATE common) target_link_libraries(p3 PRIVATE
+# common)
