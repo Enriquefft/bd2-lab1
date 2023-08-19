@@ -38,7 +38,7 @@ private:
   void updateMetadata(pos_type pos);
 };
 constexpr Student GetEmptyStudent(int pos = -1) {
-  return Student{"", "", "", "", 0, 0, pos};
+  return Student{"", "", "", "", 0, 0.0};
 }
 
 inline FixedRecord::FixedRecord(const std::string_view &file_name)
@@ -65,15 +65,19 @@ void FixedRecord::updateMetadata(pos_type pos) {
 }
 
 inline void FixedRecord::add(const Student &record) {
+
   m_file_stream.open(m_file_name.data(), std::ios::app | std::ios::binary);
   if (m_first_deleted != -1) {
     m_file_stream.seekg(static_cast<int>(m_first_deleted * RECORD_SIZE));
   }
+  // char*
+  // m_file_stream.write("data\n", 5);
   m_file_stream.write((char *)&record, RECORD_SIZE);
   m_file_stream.close();
 }
 
 inline std::vector<Student> FixedRecord::load() {
+
   std::vector<Student> alumnos;
   Student alumno;
   std::ifstream file(m_file_name, std::ios::binary);

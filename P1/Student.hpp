@@ -1,6 +1,7 @@
 #ifndef STUDENT_HPP
 #define STUDENT_HPP
 
+#include <cstring>
 #include <format>
 #include <limits>
 #include <random>
@@ -22,15 +23,16 @@ struct Student {
   int ciclo;
   float mensualidad;
 
-  Student()
+  Student(const char *_codigo, const char *_nombre)
       : ciclo(ciclo_dist(get_generator())),
         mensualidad(mensualidad_dist(get_generator()))
 
   {
-    generate_string(codigo, MAX_CODIGO_LEN);
-    generate_string(nombre, MAX_NOMBRE_LEN);
-    generate_string(apellidos, MAX_APELLIDO_LEN);
-    generate_string(carrera, MAX_CARRERA_LEN);
+    generate_string(static_cast<char *>(apellidos), MAX_APELLIDO_LEN);
+    generate_string(static_cast<char *>(carrera), MAX_CARRERA_LEN);
+
+    strncpy(static_cast<char *>(codigo), _codigo, MAX_CODIGO_LEN);
+    strncpy(static_cast<char *>(nombre), _nombre, MAX_NOMBRE_LEN);
   }
 
   friend auto operator<<(std::ostream &stream, const Student &student)
