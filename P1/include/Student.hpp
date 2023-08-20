@@ -14,14 +14,16 @@ constexpr std::size_t MAX_CARRERA_LEN = 15;
 struct Student {
 
   // NOLINTBEGIN(modernize-avoid-c-arrays)
-  char codigo[MAX_CODIGO_LEN];
-  char nombre[MAX_NOMBRE_LEN];
-  char apellidos[MAX_APELLIDO_LEN];
-  char carrera[MAX_CARRERA_LEN];
+  char codigo[MAX_CODIGO_LEN]{};
+  char nombre[MAX_NOMBRE_LEN]{};
+  char apellidos[MAX_APELLIDO_LEN]{};
+  char carrera[MAX_CARRERA_LEN]{};
   // NOLINTEND(modernize-avoid-c-arrays)
 
-  int ciclo;
-  float mensualidad;
+  int ciclo{};
+  float mensualidad{};
+
+  Student() = default;
 
   Student(const char *_codigo, const char *_nombre)
       : ciclo(ciclo_dist(get_generator())),
