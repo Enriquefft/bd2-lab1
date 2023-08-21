@@ -31,6 +31,12 @@ namespace {
   }
 }
 
+[[maybe_unused]] void deletion_test() {
+  FixedRecord db("students.db");
+  bool rm = db.remove(1);
+  std::cout << "Remove: " << rm << '\n';
+}
+
 } // namespace
 
 int main() {
@@ -38,6 +44,7 @@ int main() {
   // student_test();
   // writing_test();
   read_test();
+  deletion_test();
 
   return 0;
 }
