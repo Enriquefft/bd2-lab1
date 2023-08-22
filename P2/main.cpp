@@ -1,6 +1,4 @@
-//
-// Created by renat on 8/19/2023.
-//
+#include "Student.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -9,27 +7,6 @@
 #include <utility>
 #include <vector>
 
-struct Alumno {
-  std::string Nombre;
-  std::string Apellidos;
-  std::string Carrera;
-  float Mensualidad{};
-
-public:
-  Alumno() = default;
-
-  Alumno(std::string nombre, std::string apellidos, std::string carrera,
-         float mensualidad)
-      : Nombre(std::move(nombre)), Apellidos(std::move(apellidos)),
-        Carrera(std::move(carrera)), Mensualidad(mensualidad) {}
-
-  friend std::ostream &operator<<(std::ostream &stream, const Alumno &alumno) {
-    stream << alumno.Nombre << " " << alumno.Apellidos << " " << alumno.Carrera
-           << " " << alumno.Mensualidad;
-    return stream;
-  }
-};
-
 /*
  * VariableRecord class
  * Only available for txt files.
@@ -37,63 +14,67 @@ public:
  * */
 class VariableRecord {
 private:
-  std::string m_filename; // name of the .txt file
-  char m_delimiter = '|';
+  constexpr static char M_DELIMITER = '|';
 
-  std::string pack(Alumno alumno) const {
-    return alumno.Nombre + m_delimiter + alumno.Apellidos + m_delimiter +
-           alumno.Carrera + m_delimiter + std::to_string(alumno.Mensualidad) +
+  std::string m_filename;
+
+  [[nodiscard]] static auto pack(const Student &alumno) -> std::string {
+    return alumno.nombres + M_DELIMITER + alumno.apellidos + M_DELIMITER +
+           alumno.carrera + M_DELIMITER + std::to_string(alumno.mensualidad) +
            "\n";
   }
 
-  Alumno unpack(std::stringstream &record) const {
-    Alumno a;
-    std::getline(record, a.Nombre, m_delimiter);
-    std::getline(record, a.Apellidos, m_delimiter);
-    std::getline(record, a.Carrera, m_delimiter);
+  static auto unpack(std::stringstream &record) -> Student {
+    Student student;
+    std::getline(record, student.nombres, M_DELIMITER);
+    std::getline(record, student.apellidos, M_DELIMITER);
+    std::getline(record, student.carrera, M_DELIMITER);
 
     std::string mensualidad;
     std::getline(record, mensualidad, '\n');
     try {
-      a.Mensualidad = std::stof(mensualidad);
+      student.mensualidad = std::stof(mensualidad);
     } catch (std::invalid_argument &e) {
       throw e;
     }
 
-    return a;
+    return student;
   }
 
 public:
-  explicit VariableRecord(const std::string &fn) { m_filename = fn + ".txt"; }
+  explicit VariableRecord(const std::string &file_name) {
+    m_filename = file_name + ".txt";
+  }
 
-  void add(const Alumno &record) {
+  void add(const Student &record) {
     std::string pack_record = pack(record);
     std::ofstream file(m_filename,
                        std::ios::app); // Envia el puntero al final del archivo
-    if (!file.is_open())
-      throw("ERROR: No se pudo abrir el archivo");
+    if (!file.is_open()) {
+      throw std::runtime_error("ERROR: No se pudo abrir el archivo");
+    }
     file.write(pack_record.c_str(), pack_record.size());
     file.close();
   }
 
-  std::vector<Alumno> load() {
+  auto load() -> std::vector<Student> {
     std::fstream file(m_filename);
     if (!file.is_open()) {
       throw std::runtime_error("ERROR: No se pudo abrir el archivo");
     }
 
-    std::vector<Alumno> vec;
+    std::vector<Student> vec;
 
     std::string buff;
     while (getline(file, buff)) {
-      std::stringstream ss(buff);
-      vec.push_back(unpack(ss));
+      std::stringstream str_stream(buff);
+      vec.push_back(unpack(str_stream));
     }
 
     return vec;
   }
 
-  Alumno readRecord(int pos = 0) {
+  auto read_record(int pos = 0) -> Student {
     if (pos <= 0) {
       throw std::invalid_argument("ERROR: posicion invalida");
     }
@@ -113,7 +94,7 @@ public:
     }
     std::stringstream buff(s);
 
-    Alumno alumno = unpack(buff);
+    Student alumno = unpack(buff);
 
     file.close();
 
@@ -123,22 +104,30 @@ public:
 
 int main() {
 
-  // Testing del constructor()
-  VariableRecord vr("data");
+  try {
 
-  // Testing de la función add()
-  vr.add(Alumno("Renato", "Cernades", "CS", 12000));
-  vr.add(Alumno("Juan Diego", "Castro", "CS", 8632));
-  vr.add(Alumno("Chachi", "Jose", "CS", 7769));
-  vr.add(Alumno("Joaquín", "Jordan", "CS", 98754));
+    // Testing del constructor()
+    VariableRecord var_record("data");
 
-  // Testing de la función readRecord()
-  std::cout << vr.readRecord(1) << std::endl;
+    // Testing de la función add()
+    // NOLINTBEGIN(readability-magic-numbers)
+    var_record.add(Student("Renato", "Cernades", "CS", 12000));
+    var_record.add(Student("Juan Diego", "Castro", "CS", 8632));
+    var_record.add(Student("Chachi", "Jose", "CS", 7769));
+    var_record.add(Student("Joaquín", "Jordan", "CS", 98754));
+    // NOLINTEND(readability-magic-numbers)
 
-  // Testing de la función load()
-  std::vector<Alumno> alumnos = vr.load();
-  for (auto a : alumnos) {
-    std::cout << a << std::endl;
+    // Testing de la función readRecord()
+    std::cout << var_record.read_record(1) << std::endl;
+
+    // Testing de la función load()
+    std::vector<Student> alumnos = var_record.load();
+    for (const auto &alumn : alumnos) {
+      std::cout << alumn << std::endl;
+    }
+
+  } catch (std::exception &e) {
+    std::cout << e.what() << std::endl;
   }
 
   return 0;
