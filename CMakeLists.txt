@@ -49,5 +49,5 @@ target_link_options(
 add_subdirectory("P1")
 
 target_link_libraries(p1 PRIVATE common)
-# target_link_libraries(p2 PRIVATE common) target_link_libraries(p3 PRIVATE
-# common)
+add_executable(p2 P2/main.cpp)
+add_executable(p3 P3/main.cpp)

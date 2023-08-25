@@ -127,7 +127,6 @@ auto FixedRecord::read_metadata() -> bool {
 
 void FixedRecord::update_first_deleted(pos_type pos) {
   m_first_deleted = pos;
-
   std::ofstream metadata(METADATA_FILE.data(), std::ios::binary);
   metadata.write(reinterpret_cast<const char *>(&pos), sizeof(int));
   metadata.close();
