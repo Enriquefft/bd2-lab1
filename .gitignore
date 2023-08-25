@@ -34,8 +34,17 @@
 *.out
 *.app
 
-CMakeLists.txt
+# Clion files
 .idea
+
+# Cmake
+CMakeLists.txt
+
+# Compiler files
 cmake-build-debug
 cmake-build-debug-mingw
-P2/data.txt
+cmake-build-release
+
+# Binary and txt files
+*.dat
+*.txt

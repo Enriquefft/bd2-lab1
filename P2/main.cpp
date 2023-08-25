@@ -87,7 +87,8 @@ public:
     std::string buff;
     while (getline(file, buff)) {
       std::stringstream ss(buff);
-      vec.push_back(unpack(ss));
+      if(!ss.str().empty())
+        vec.push_back(unpack(ss));
     }
 
     return vec;
