@@ -1,6 +1,11 @@
 /build
 /.cache
 
+
+packed_record.bin
+record.bin
+test.cpp
+
 # Prerequisites
 *.d
 
