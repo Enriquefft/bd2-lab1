@@ -29,6 +29,9 @@ struct Student {
                                  student.nombres, student.apellidos,
                                  student.carrera, student.mensualidad);
   }
+  // custom spaceship (float difference must be small
+  // nombre, apellidos, carrera must be equal)
+  auto operator<=>(const Student &other) const = default;
 
 private:
   [[maybe_unused]] static auto get_generator() -> std::mt19937 &;

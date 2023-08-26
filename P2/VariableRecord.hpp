@@ -49,8 +49,15 @@ private:
     pos_type size;
     friend auto operator<<(std::ofstream &stream, const MetadataRecord &record)
         -> std::ofstream & {
-      std::cout << "Writing to file" << std::endl;
-      stream << record.pos << ' ' << record.size << '\n';
+      // stream << record.pos << ' ' << record.size << '\n';
+
+      stream.write(reinterpret_cast<const char *>(&record.pos),
+                   sizeof(record.pos));
+      stream << ' ';
+      stream.write(reinterpret_cast<const char *>(&record.size),
+                   sizeof(record.size));
+      stream << '\n';
+
       return stream;
     }
     // friend auto operator<<(std::ostream &stream, const MetadataRecord
@@ -60,6 +67,18 @@ private:
     //          << static_cast<int>(record.size);
     //   return stream;
     // }
+
+    friend auto operator>>(std::ifstream &stream, MetadataRecord &record)
+        -> std::ifstream & {
+
+      stream.read(reinterpret_cast<char *>(&record.pos), sizeof(record.pos));
+      stream.seekg(1, std::ios::cur);
+      stream.read(reinterpret_cast<char *>(&record.size), sizeof(record.size));
+      stream.seekg(1, std::ios::cur);
+
+      return stream;
+    }
+
     constexpr static int64_t METADATA_RECORD_SIZE = 2 * sizeof(pos_type) + 2;
   };
 #pragma pack(pop)
@@ -111,16 +130,13 @@ inline void VariableRecord::add(const value_type &record) {
   metadata.seekp(0, std::ios::end);
   // Insert new element pointer to metadata
   // curr pos in metadata
-  std::cout << "Metadata pos: " << metadata.tellp() << std::endl;
 
   MetadataRecord new_record{NEW_POS, static_cast<pos_type>(pack_record.size())};
   // metadata.write(reinterpret_cast<const char *>(&new_record),
   //                sizeof(new_record));
-  // std::cout << "New record: " << new_record << std::endl;
 
   metadata << new_record;
 
-  std::cout << "New pos: " << metadata.tellp() << std::endl;
   metadata.close();
 }
 
@@ -136,22 +152,31 @@ inline auto VariableRecord::load() -> std::vector<value_type> {
   }
 
   pos_type record_count = 0;
-  if (!(metadata >> record_count)) {
+  if (!(metadata.read(reinterpret_cast<char *>(&record_count),
+                      sizeof(record_count)))) {
     std::cerr << "ERROR: No se pudo leer la cantidad de registros\n";
   }
 
   std::vector<value_type> vec;
   std::stringstream buff_stream;
 
-  // Iterate the metadata
   MetadataRecord record{};
-  // while (metadata >> record.pos >> record.size) {
-  // File to read format:
-  // pos size \n
-  // read pos, size, ignore \n and whitespace
-  while (metadata >> record.pos >> record.size >> std::ws) {
 
-    m_file_stream.seekg(record.pos);
+  // Find eof
+  metadata.seekg(0, std::ios::end);
+  auto eof = metadata.tellg();
+
+  // Go to start of the record pointers.
+  metadata.seekg(sizeof(m_record_count) + 1, std::ios::beg);
+
+  while (metadata.tellg() < eof) {
+
+    if (!(metadata >> record)) {
+      throw std::runtime_error("Error: No se pudo leer la metadata");
+    }
+    if (metadata.fail() || metadata.bad()) {
+      throw std::runtime_error("Error: Hubo un error con el archivo");
+    }
 
     char tmp_buffer[record.size];
     m_file_stream.read(tmp_buffer, record.size);
@@ -174,13 +199,9 @@ inline auto VariableRecord::read_record(pos_type pos) -> value_type {
     throw std::runtime_error("ERROR: No se pudo abrir la metadata");
   }
 
-  m_file_stream.open(m_filename, std::ios::in);
-  if (!m_file_stream.is_open()) {
-    throw std::runtime_error("Error: No se pudo abrir la data.");
-  }
-
   pos_type record_count = 0;
-  if (!(metadata >> record_count)) {
+  if (!(metadata.read(reinterpret_cast<char *>(&record_count),
+                      sizeof(record_count)))) {
     std::cerr << "ERROR: No se pudo leer la cantidad de registros\n";
   }
 
@@ -188,24 +209,39 @@ inline auto VariableRecord::read_record(pos_type pos) -> value_type {
     throw std::invalid_argument("ERROR: posicion invalida");
   }
 
-  if (pos < record_count) {
+  if (pos > record_count) {
     throw std::invalid_argument("Error: posicion inválida");
   }
 
   MetadataRecord record{};
-  // Find position from metadata
-  metadata.seekg(sizeof(record_count) + 1 +
-                     (pos * MetadataRecord::METADATA_RECORD_SIZE),
-                 std::ios::beg);
 
-  metadata >> record.size >> record.pos >> std::ws;
+  const pos_type metdata_pos =
+      sizeof(record_count) + 1 +
+      ((pos - 1) * MetadataRecord::METADATA_RECORD_SIZE);
+
+  // Find position from metadata
+  metadata.seekg(metdata_pos, std::ios::beg);
+
+  metadata >> record;
+
   metadata.close();
 
   // Read student
   Student student;
 
+  m_file_stream.open(m_filename, std::ios::in);
+  if (!m_file_stream.is_open()) {
+    throw std::runtime_error("Error: No se pudo abrir la data.");
+  }
+
   m_file_stream.seekg(record.pos);
-  m_file_stream.read(reinterpret_cast<char *>(&student), sizeof(student));
+
+  char tmp_buffer[record.size];
+  m_file_stream.read(tmp_buffer, record.size);
+
+  std::stringstream buff_stream;
+  buff_stream.write(tmp_buffer, record.size);
+  student = unpack(buff_stream);
 
   m_file_stream.close();
 
@@ -245,7 +281,8 @@ inline auto VariableRecord::read_metadata() -> bool {
       std::ios::in); // Already has been checked that it exists
 
   // The record count must be readable
-  if (!(metadata >> m_record_count)) {
+  if (!(metadata.read(reinterpret_cast<char *>(&m_record_count),
+                      sizeof(m_record_count)))) {
     std::cerr << "ERROR: No se pudo leer la cantidad de registros\n";
     return false;
   }
@@ -254,20 +291,22 @@ inline auto VariableRecord::read_metadata() -> bool {
 
   MetadataRecord record{};
 
+  // Find eof
+  metadata.seekg(0, std::ios::end);
+  auto eof = metadata.tellg();
+
   // Go to start of the record pointers.
   metadata.seekg(sizeof(m_record_count) + 1, std::ios::beg);
 
-  while (metadata >> record.pos >> record.size) {
-    std::cout << "pos: " << record.pos << " size: " << record.size << '\n';
-  }
+  while (metadata.tellg() < eof) {
 
-  if (metadata.bad()) {
-    std::cerr << "ERROR: No se pudo leer la metadata, state is bad\n";
-    return false;
-  }
-  if (!metadata.eof()) {
-    std::cerr << "ERROR: No se pudo leer la metadata, couldn't reach EOF\n";
-    return false;
+    if (!(metadata >> record)) {
+
+      throw std::runtime_error("Error: No se pudo leer la metadata");
+    }
+    if (metadata.fail() || metadata.bad()) {
+      throw std::runtime_error("Error: Hubo un error con el archivo");
+    }
   }
   metadata.close();
 
@@ -280,16 +319,11 @@ inline void VariableRecord::update_record_count(pos_type pos) {
 
   std::ofstream metadata(METADATA_FILE.data(), std::ios::in | std::ios::out);
   metadata.seekp(0, std::ios::beg);
-  std::cout << "Updating record count to: " << m_record_count << '\n';
-  std::cout << "Metadata pos before: " << metadata.tellp() << '\n';
 
   char tmp_buffer[sizeof(m_record_count)];
   std::memcpy(tmp_buffer, &m_record_count, sizeof(m_record_count));
   metadata.write(tmp_buffer, sizeof(m_record_count));
   metadata << '\n';
-
-  std::cout << "Metadata pos after: " << metadata.tellp() << '\n';
-  // metadata.flush();
 }
 
 [[nodiscard]] inline auto VariableRecord::pack(const value_type &alumno)
