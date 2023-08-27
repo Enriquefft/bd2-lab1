@@ -105,7 +105,6 @@ auto FixedRecord::read_metadata() -> bool {
 
   // File must contain a single integer
   std::streamsize size = file.tellg();
-  std::cout << "metadata size: " << size << '\n';
   if (size != sizeof(int)) {
     std::cerr << "File does not contain a single integer";
     file.close();

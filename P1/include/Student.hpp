@@ -25,6 +25,15 @@ struct Student {
 
   Student() = default;
 
+  Student(const char *_codigo, const char *_nombre, const char *_apellido,
+          const char *_carrera, int _ciclo, float _mens)
+      : ciclo(_ciclo), mensualidad(_mens) {
+    strncpy(static_cast<char *>(codigo), _codigo, MAX_CODIGO_LEN);
+    strncpy(static_cast<char *>(nombre), _nombre, MAX_NOMBRE_LEN);
+    strncpy(static_cast<char *>(apellidos), _apellido, MAX_APELLIDO_LEN);
+    strncpy(static_cast<char *>(carrera), _carrera, MAX_CARRERA_LEN);
+  }
+
   Student(const char *_codigo, const char *_nombre)
       : ciclo(ciclo_dist(get_generator())),
         mensualidad(mensualidad_dist(get_generator()))

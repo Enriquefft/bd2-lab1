@@ -18,9 +18,10 @@ namespace {
 [[maybe_unused]] void writing_test() {
 
   FixedRecord db("students.db");
-  db.add(Student("a", "b"));
-  db.add(Student("b", "c"));
-  db.add(Student("c", "d"));
+
+  db.add(Student{"Code102", "Renato", "Cernades", "CS", 4, 94.1});
+  db.add(Student{"CE@#@", "Hola", "Avasca", "CS", 4, 1233.2});
+  db.add(Student{"CE**(D", "Haie", "Cerqnas", "CS", 1, 421.2});
 }
 
 [[maybe_unused]] void read_test() {
@@ -41,10 +42,9 @@ namespace {
 
 int main() {
 
-  // student_test();
-  // writing_test();
+  deletion_test();
+  writing_test();
   read_test();
-  // deletion_test();
 
   return 0;
 }
