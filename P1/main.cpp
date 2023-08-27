@@ -44,7 +44,7 @@ int main() {
   // student_test();
   // writing_test();
   read_test();
-  deletion_test();
+  // deletion_test();
 
   return 0;
 }

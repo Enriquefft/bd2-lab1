@@ -2,7 +2,7 @@
 #define STUDENT_HPP
 
 #include <cstring>
-#include <format>
+#include <iomanip>
 #include <limits>
 #include <random>
 
@@ -37,13 +37,24 @@ struct Student {
     strncpy(static_cast<char *>(nombre), _nombre, MAX_NOMBRE_LEN);
   }
 
+  // friend auto operator<<(std::ostream &stream, const Student &student)
+  //     -> std::ostream & {
+  //   return stream << std::format("{:<3}\t{:<10}  {:<10}\n"
+  //                                "Ciclo: {:<2}\tMensualidad: {:<4}\n",
+  //                                student.codigo, student.nombre,
+  //                                student.apellidos, student.carrera,
+  //                                student.ciclo, student.mensualidad);
+  // }
   friend auto operator<<(std::ostream &stream, const Student &student)
       -> std::ostream & {
-    return stream << std::format("{:<3}\t{:<10}  {:<10}\n"
-                                 "Ciclo: {:<2}\tMensualidad: {:<4}\n",
-                                 student.codigo, student.nombre,
-                                 student.apellidos, student.carrera,
-                                 student.ciclo, student.mensualidad);
+    std::ostringstream oss;
+    oss << std::left << std::setw(3) << student.codigo << "\t" << std::left
+        << std::setw(10) << student.nombre << "  " << std::left << std::setw(10)
+        << student.apellidos << "\n"
+        << "Ciclo: " << std::left << std::setw(2) << student.carrera << "\t"
+        << "Mensualidad: " << std::left << std::setw(4) << student.ciclo
+        << "\n";
+    return stream << oss.str();
   }
 
 private:
